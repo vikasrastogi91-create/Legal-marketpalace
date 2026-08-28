@@ -1,9 +1,75 @@
-<script src="https://jsdelivr.net"></script>
-<script>
-// 🚨 सबसे ज़रूरी: यहाँ अपना असली TronLink Pro वॉलेट एड्रेस डालें (T से शुरू होने वाला)
-const MY_SECRET_ADMIN_WALLET = "TLYMwxcAgwATELoPzK1QrkBKaeS8EWv1hv"; 
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decentralized Legal Marketplace</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; text-align: center; background-color: #f4f7f6; padding: 15px; margin: 0; color: #333; }
+        .container { max-width: 500px; margin: 20px auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0px 4px 15px rgba(0,0,0,0.08); }
+        h1 { color: #1e3d59; font-size: 24px; margin-bottom: 5px; }
+        .subtitle { color: #666; font-size: 14px; margin-bottom: 25px; }
+        .btn { display: block; width: 100%; padding: 14px; margin: 12px 0; font-size: 16px; font-weight: bold; color: white; border: none; border-radius: 8px; cursor: pointer; box-sizing: border-box; }
+        .lawyer-btn { background-color: #1e3d59; }
+        .client-btn { background-color: #ff6e40; }
+        .admin-box { background: #eef2f5; padding: 15px; border-radius: 8px; margin-top: 15px; text-align: left; display: none; }
+        .hidden-section { display: none; background: #fff; border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-top: 20px; text-align: left; }
+        label { font-weight: bold; display: block; margin-top: 10px; font-size: 14px; }
+        input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        .stage-badge { display: inline-block; padding: 5px 10px; background: #e1f5fe; color: #0288d1; border-radius: 12px; font-size: 12px; font-weight: bold; margin-top: 5px; }
+        .note { color: #888; font-size: 12px; margin-top: 20px; line-height: 1.4; }
+    </style>
+    <!-- ट्रोन ब्लॉकचेन कनेक्ट करने की फ्री लाइब्रेरी -->
+    <script src="https://jsdelivr.net"></script>
+</head>
+<body>
 
-// TRON नेटवर्क पर असली USDT (TRC-20) का स्मार्ट कॉन्ट्रैक्ट एड्रेस
+<div class="container" id="mainHome">
+    <h1>लीगल वेब3傳मार्केटप्लेस</h1>
+    <div class="subtitle">100% प्राइवेट और डिसेंट्रलाइज्ड कानूनी सेवाएं</div>
+    
+    <button class="btn lawyer-btn" onclick="handleEntry('lawyer')">मैं वकील हूँ (एंट्री फीस ₹200)</button>
+    <button class="btn client-btn" onclick="handleEntry('client')">मैं क्लाइंट हूँ (एंट्री फीस ₹200)</button>
+    
+    <div class="note">सुरक्षा के लिए इस साइट को सिर्फ <b>TronLink Pro</b> ऐप के <b>Discover ब्राउज़र</b> में ही खोलें।</div>
+</div>
+
+<!-- क्लाइंट का गुप्त डैशबोर्ड -->
+<div class="container hidden-section" id="clientDashboard">
+    <h2>क्लाइंट डैशबोर्ड (आपका स्वागत है)</h2>
+    <p style="font-size:13px; color:#666;">यहाँ अपना केस पोस्ट करें। आपका बजट वकीलों को सिर्फ 30% होकर दिखेगा।</p>
+    
+    <form id="caseForm" onsubmit="postCase(event)">
+        <label>केस का शीर्षक (Title)</label>
+        <input type="text" id="caseTitle" placeholder="जैसे: जमीन का विवाद, एग्रीमेंट रिव्यू" required>
+        
+        <label>केस का विवरण (Details)</label>
+        <textarea id="caseDetails" rows="4" placeholder="अपने केस के बारे में संक्षेप में लिखें..." required></textarea>
+        
+        <label>आपका बजट (अपनी जेब के अनुसार ₹ में डालें)</label>
+        <input type="number" id="clientBudget" placeholder="जैसे: 10000" oninput="calculateMasking()" required>
+        
+        <div style="margin-top:10px; font-size:13px; color:#2e7d32; font-weight:bold;">
+            वकीलों को दिखने वाली फीस (30%): ₹<span id="maskedDisplay">0</span>
+        </div>
+        
+        <button type="submit" class="btn client-btn" style="margin-top:15px;">केस पोस्ट करें (फीस ₹100 लगेगा)</button>
+    </form>
+</div>
+
+<!-- वकीलों का गुप्त मार्केटप्लेस डैशबोर्ड (कोई वकील दूसरे को नहीं देख पाएगा) -->
+<div class="container hidden-section" id="lawyerDashboard">
+    <h2>वकील डैशबोर्ड (उपलब्ध केस)</h2>
+    <p style="font-size:13px; color:#666;">यहाँ आपको सिर्फ आपके लिए उपलब्ध केस और उनकी 30% फीस दिखाई देगी।</p>
+    
+    <div id="noCases" style="color:#999; text-align:center; padding:20px;">अभी कोई नया केस उपलब्ध नहीं है...</div>
+    
+    <div id="caseList"></div>
+</div>
+
+<script>
+// 🚨 आपका असली ट्रोन वॉलेट और USDT कॉन्ट्रैक्ट यहाँ पूरी तरह सुरक्षित है
+const MY_SECRET_ADMIN_WALLET = "TLYMwxcAgWATELoPzK1QrkBKaeS8EWv1hv"; 
 const USDT_CONTRACT_ADDRESS = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"; 
 
 let currentRole = "";
@@ -12,15 +78,12 @@ let activeCases = [];
 async function handleEntry(role) {
     currentRole = role;
     
-    // 1. चेक करें कि यूज़र TronLink Pro ब्राउज़र में है या नहीं
     if (!window.tronWeb || !window.tronWeb.defaultAddress.base58) {
         alert("त्रुटि: कृपया इस वेबसाइट को अपने TronLink Pro ऐप के 'Discover' टैब में खोलें!");
         return;
     }
     
     const userWallet = window.tronWeb.defaultAddress.base58;
-    
-    // ₹200 के लिए लगभग 2.3 USDT (USDT में 6 डेसिमल होते हैं, इसलिए 2300000 लिखा जाता है)
     const amountInSun = "2300000"; 
     
     let confirmPay = confirm("वॉलेट कनेक्टेड: " + userWallet + "\n\nप्रोफाइल एक्टिवेट करने के लिए 2.3 TRC20-USDT (लगभग ₹200) की एंट्री फीस कन्फर्म करें?");
@@ -29,16 +92,13 @@ async function handleEntry(role) {
         try {
             alert("कृपया अपने TronLink Pro वॉलेट में ट्रांजैक्शन और पासवर्ड कन्फर्म करें...");
             
-            // 2. ट्रोन के असली USDT कॉन्ट्रैक्ट को लोड करना
             let contract = await window.tronWeb.contract().at(USDT_CONTRACT_ADDRESS);
             
-            // 3. यूज़र के वॉलेट से आपके गुप्त वॉलेट में सीधे ट्रांसफर करना
             let tx = await contract.transfer(
-                MY_SECRET_ADMIN_WALLET, // पैसे यहाँ आएंगे
-                amountInSun             // ₹200 के बराबर USDT
+                MY_SECRET_ADMIN_WALLET, 
+                amountInSun             
             ).send();
             
-            // 4. ट्रांसफर सफल होने पर डैशबोर्ड खोलना
             alert("पेमेंट सफल! ट्रांजैक्शन ID: " + tx + "\nआपकी गुप्त प्रोफाइल सुरक्षित रूप से एक्टिवेट हो गई है।");
             
             document.getElementById('mainHome').style.display = 'none';
@@ -55,7 +115,6 @@ async function handleEntry(role) {
     }
 }
 
-// 30% बजट मास्किंग का फंक्शन
 function calculateMasking() {
     let budget = document.getElementById('clientBudget').value;
     document.getElementById('maskedDisplay').innerText = Math.round(budget * 0.30);
@@ -67,8 +126,7 @@ function postCase(e) {
     let details = document.getElementById('caseDetails').value;
     let totalBudget = parseFloat(document.getElementById('clientBudget').value);
     
-    // केस पोस्टिंग के लिए ₹100 यानी लगभग 1.15 USDT
-    let confirmPost = confirm("केस पोस्ट करने का चार्ज (1.15 USDT / ₹100) वॉलेट से कन्फर्म करें?");
+    let confirmPost = confirm("केस पोस्ट करने का charge (1.15 USDT / ₹100) वॉलेट से कन्फर्म करें?");
     if(!confirmPost) return;
     
     let newCase = {
@@ -139,3 +197,6 @@ function updateStage(caseId) {
     }
 }
 </script>
+
+</body>
+</html>
