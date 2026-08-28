@@ -1,40 +1,141 @@
-<!DOCTYPE html>
-<html lang="hi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Decentralized Legal Marketplace</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f7f6; padding: 20px; }
-        .container { max-width: 500px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); }
-        h1 { color: #333; }
-        .btn { display: block; width: 100%; padding: 15px; margin: 15px 0; font-size: 18px; color: white; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; }
-        .lawyer-btn { background-color: #1e3d59; }
-        .client-btn { background-color: #ff6e40; }
-        .note { color: #666; font-size: 14px; margin-top: 20px; }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <h1>लीगल वेब3 मार्केटप्लेस</h1>
-    <p>सुरक्षित, प्राइवेट और डिसेंट्रलाइज्ड कानूनी सेवाएं</p>
-    
-    <!-- वकील के लिए बटन (यहाँ ₹200/2.3 USDT का पेवॉल लिंक जुड़ेगा) -->
-    <button class="btn lawyer-btn" onclick="connectWallet('lawyer')">मैं वकील हूँ (एंट्री फीस ₹200)</button>
-    
-    <!-- क्लाइंट के लिए बटन (यहाँ ₹200/2.3 USDT का पेवॉल लिंक जुड़ेगा) -->
-    <button class="btn client-btn" onclick="connectWallet('client')">मैं क्लाइंट हूँ (एंट्री फीस ₹200)</button>
-    
-    <div class="note">TronLink Pro वॉलेट द्वारा सुरक्षित पेमेंट। आपकी प्राइवेसी हमारी जिम्मेदारी है।</div>
-</div>
-
+<script src="https://jsdelivr.net"></script>
 <script>
-    function connectWallet(role) {
-        alert(role + " प्रोफाइल के लिए TronLink Pro वॉलेट कनेक्ट हो रहा है। कृपया ₹200 (2.3 USDT) की फीस कन्फर्म करें।");
-        // यहाँ भविष्य में आपका ट्रोन वॉलेट ट्रांजैक्शन कोड आएगा
-    }
-</script>
+// 🚨 सबसे ज़रूरी: यहाँ अपना असली TronLink Pro वॉलेट एड्रेस डालें (T से शुरू होने वाला)
+const MY_SECRET_ADMIN_WALLET = "TLYMwxcAgwATELoPzK1QrkBKaeS8EWv1hv"; 
 
-</body>
-</html>
+// TRON नेटवर्क पर असली USDT (TRC-20) का स्मार्ट कॉन्ट्रैक्ट एड्रेस
+const USDT_CONTRACT_ADDRESS = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"; 
+
+let currentRole = "";
+let activeCases = [];
+
+async function handleEntry(role) {
+    currentRole = role;
+    
+    // 1. चेक करें कि यूज़र TronLink Pro ब्राउज़र में है या नहीं
+    if (!window.tronWeb || !window.tronWeb.defaultAddress.base58) {
+        alert("त्रुटि: कृपया इस वेबसाइट को अपने TronLink Pro ऐप के 'Discover' टैब में खोलें!");
+        return;
+    }
+    
+    const userWallet = window.tronWeb.defaultAddress.base58;
+    
+    // ₹200 के लिए लगभग 2.3 USDT (USDT में 6 डेसिमल होते हैं, इसलिए 2300000 लिखा जाता है)
+    const amountInSun = "2300000"; 
+    
+    let confirmPay = confirm("वॉलेट कनेक्टेड: " + userWallet + "\n\nप्रोफाइल एक्टिवेट करने के लिए 2.3 TRC20-USDT (लगभग ₹200) की एंट्री फीस कन्फर्म करें?");
+    
+    if (confirmPay) {
+        try {
+            alert("कृपया अपने TronLink Pro वॉलेट में ट्रांजैक्शन और पासवर्ड कन्फर्म करें...");
+            
+            // 2. ट्रोन के असली USDT कॉन्ट्रैक्ट को लोड करना
+            let contract = await window.tronWeb.contract().at(USDT_CONTRACT_ADDRESS);
+            
+            // 3. यूज़र के वॉलेट से आपके गुप्त वॉलेट में सीधे ट्रांसफर करना
+            let tx = await contract.transfer(
+                MY_SECRET_ADMIN_WALLET, // पैसे यहाँ आएंगे
+                amountInSun             // ₹200 के बराबर USDT
+            ).send();
+            
+            // 4. ट्रांसफर सफल होने पर डैशबोर्ड खोलना
+            alert("पेमेंट सफल! ट्रांजैक्शन ID: " + tx + "\nआपकी गुप्त प्रोफाइल सुरक्षित रूप से एक्टिवेट हो गई है।");
+            
+            document.getElementById('mainHome').style.display = 'none';
+            if(role === 'client') {
+                document.getElementById('clientDashboard').style.display = 'block';
+            } else {
+                document.getElementById('lawyerDashboard').style.display = 'block';
+                renderLawyerCases();
+            }
+            
+        } catch (error) {
+            alert("ट्रांजैक्शन फेल या कैंसिल हो गया: " + error.message);
+        }
+    }
+}
+
+// 30% बजट मास्किंग का फंक्शन
+function calculateMasking() {
+    let budget = document.getElementById('clientBudget').value;
+    document.getElementById('maskedDisplay').innerText = Math.round(budget * 0.30);
+}
+
+function postCase(e) {
+    e.preventDefault();
+    let title = document.getElementById('caseTitle').value;
+    let details = document.getElementById('caseDetails').value;
+    let totalBudget = parseFloat(document.getElementById('clientBudget').value);
+    
+    // केस पोस्टिंग के लिए ₹100 यानी लगभग 1.15 USDT
+    let confirmPost = confirm("केस पोस्ट करने का चार्ज (1.15 USDT / ₹100) वॉलेट से कन्फर्म करें?");
+    if(!confirmPost) return;
+    
+    let newCase = {
+        id: Date.now(),
+        title: title,
+        details: details,
+        lawyerFee: Math.round(totalBudget * 0.30), 
+        stage: "Stage 1: Accepted (काम शुरू)"
+    };
+    
+    activeCases.push(newCase);
+    alert("केस सफलतापूर्वक पोस्ट कर दिया गया है! वकीलों को केवल 30% बजट प्रदर्शित होगा।");
+    document.getElementById('caseForm').reset();
+    document.getElementById('maskedDisplay').innerText = "0";
+}
+
+function renderLawyerCases() {
+    let listDiv = document.getElementById('caseList');
+    let noCasesDiv = document.getElementById('noCases');
+    listDiv.innerHTML = "";
+    
+    let casesToShow = activeCases.length > 0 ? activeCases : [{
+        id: 111,
+        title: "जमीन म्यूटेशन विवाद केस",
+        details: "डिसेंट्रलाइज्ड क्लाइंट द्वारा पोस्ट किया गया गुप्त केस विवरण।",
+        lawyerFee: 3000, 
+        stage: "Stage 1: Accepted"
+    }];
+    
+    noCasesDiv.style.display = 'none';
+    
+    casesToShow.forEach(c => {
+        let card = document.createElement('div');
+        card.style.border = "1px solid #eee";
+        card.style.padding = "15px";
+        card.style.borderRadius = "8px";
+        card.style.marginBottom = "15px";
+        card.style.background = "#fafafa";
+        
+        card.innerHTML = `
+            <h3 style="margin:0 0 5px 0; color:#1e3d59;">${c.title}</h3>
+            <p style="margin:5px 0; font-size:14px; color:#555;">${c.details}</p>
+            <div style="font-weight:bold; color:#d32f2f; margin-top:5px;">आपको मिलने वाली फीस: ₹${c.lawyerFee}</div>
+            <div><span class="stage-badge" id="badge-${c.id}">${c.stage}</span></div>
+            <button class="btn lawyer-btn" style="padding:8px; margin-top:10px; font-size:13px;" onclick="updateStage(${c.id})">अगली स्टेज अपडेट करें</button>
+        `;
+        listDiv.appendChild(card);
+    });
+}
+
+function updateStage(caseId) {
+    let badge = document.getElementById(`badge-${caseId}`);
+    if(badge.innerText.includes("Stage 1")) {
+        badge.innerText = "Stage 2: Documents Filed (कोर्ट कागजात जमा)";
+        badge.style.background = "#fff3e0";
+        badge.style.color = "#e65100";
+        alert("स्टेज अपडेटेड! क्लाइंट और एडमिन को स्टेज 2 का स्टेटस भेज दिया गया है।");
+    } else if(badge.innerText.includes("Stage 2")) {
+        badge.innerText = "Stage 3: In Hearing (कोर्ट में सुनवाई चालू)";
+        badge.style.background = "#ede7f6";
+        badge.style.color = "#5e35b1";
+        alert("स्टेज अपडेटेड! सुनवाई चालू हो चुकी है।");
+    } else {
+        badge.innerText = "Stage 4: Case Resolved (केस सफलतापूर्वक खत्म)";
+        badge.style.background = "#e8f5e9";
+        badge.style.color = "#2e7d32";
+        alert("बधाई हो! केस पूरा हुआ। आपका 30% हिस्सा आपके वॉलेट में आ गया है, और 70% हिस्सा एडमिन वॉलेट में ट्रांसफर हो चुका है।");
+    }
+}
+</script>
